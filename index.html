@@ -403,7 +403,7 @@ function render(){
   $("exName").textContent = st.type === "rest" ? st.name : st.name;
   var ex = st.ex;
   if (ex) {
-    $("setLine").textContent = (st.type === "rest" ? "Next: set " : "Set ") + st.set + " of 3" + (st.type === "rest" ? " of " + ex.name : "");
+    $("setLine").textContent = st.type === "rest" ? "Next: " + ex.name + ", set " + st.set + " of 3" : "Set " + st.set + " of 3";
     $("himReps").textContent = ex.him; $("herReps").textContent = ex.her;
     $("reps").style.display = "";
     $("swap").innerHTML = "Machine busy or it hurts? Swap: <b>" + esc(ex.swap) + "</b>";
