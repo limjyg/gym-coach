@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Gym Coach - 45 Minute Workout</title>
+<style>
+:root{
+  --bg:#0b0d10; --panel:#161a20; --panel2:#1e242c; --text:#f4f6f8; --muted:#a9b3bf;
+  --accent:#ffd23f; --go:#3ddc84; --rest:#4fb3ff; --warn:#ff6b6b; --line:#2a313b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+body{min-height:100vh;min-height:100dvh;overflow-x:hidden}
+.wrap{max-width:560px;margin:0 auto;padding:12px 16px calc(16px + env(safe-area-inset-bottom))}
+h1,h2,p{margin:0}
+button{font:inherit;color:inherit;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+a{color:var(--accent)}
+
+/* Start screen */
+#startScreen{display:flex;flex-direction:column;gap:16px;padding-top:12px}
+.title{font-size:2rem;font-weight:800;line-height:1.1}
+.subtitle{color:var(--muted);font-size:1rem}
+.rules{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:14px 16px}
+.rules h2{font-size:1rem;margin-bottom:8px;color:var(--accent)}
+.rules ul{margin:0;padding-left:20px;line-height:1.5;font-size:1rem}
+.plan{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:.95rem;line-height:1.5;color:var(--muted)}
+.plan b{color:var(--text)}
+.bigbtn{width:100%;padding:22px;border-radius:16px;font-size:1.5rem;font-weight:800;background:var(--go);color:#062b14}
+.bigbtn.secondary{background:var(--panel2);color:var(--text);font-size:1.1rem;padding:16px;border:1px solid var(--line)}
+.tips{font-size:.9rem;color:var(--muted);line-height:1.5}
+
+/* Workout screen */
+#workScreen{display:none;flex-direction:column;gap:10px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.85rem;color:var(--muted)}
+.progress{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden}
+.progress>div{height:100%;width:0;background:var(--accent);transition:width .3s}
+.phase{display:inline-block;padding:5px 12px;border-radius:999px;font-weight:800;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;background:var(--panel2)}
+.phase.work{background:var(--go);color:#062b14}
+.phase.rest{background:var(--rest);color:#04213a}
+.phase.timed{background:var(--accent);color:#2b2200}
+.exname{font-size:1.9rem;font-weight:800;line-height:1.1;overflow-wrap:anywhere}
+.setline{font-size:1.15rem;color:var(--muted);font-weight:600}
+.reps{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.reps div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.reps small{display:block;color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.reps span{font-size:1.3rem;font-weight:800}
+.timerbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:6px 12px 10px;text-align:center}
+.timer{font-size:clamp(4.5rem,26vw,8rem);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.timer.low{color:var(--warn)}
+.timerlabel{color:var(--muted);font-size:.9rem;margin-top:2px}
+.sub{font-size:1.35rem;font-weight:800;color:var(--accent);text-align:center;min-height:0}
+.sub:empty{display:none}
+.cue{background:var(--panel);border-left:4px solid var(--go);border-radius:10px;padding:10px 12px;font-size:1.1rem;line-height:1.35}
+.swap{font-size:.95rem;color:var(--muted);line-height:1.4}
+.swap b{color:var(--text)}
+.demo{display:inline-block;font-size:.95rem;font-weight:700;padding:8px 12px;border:1px solid var(--line);border-radius:10px;text-decoration:none;background:var(--panel2)}
+.next{font-size:.95rem;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+.next b{color:var(--text)}
+.controls{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;margin-top:4px}
+.controls button{padding:16px 6px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);font-weight:800;font-size:1.05rem}
+#pauseBtn{background:var(--accent);color:#2b2200;border:0}
+#pauseBtn.paused{background:var(--go);color:#062b14}
+#doneBtn{width:100%;padding:20px;border-radius:16px;font-size:1.35rem;font-weight:800;background:var(--go);color:#062b14}
+#doneBtn[hidden]{display:none}
+details.rulesmini{font-size:.9rem;color:var(--muted)}
+details.rulesmini summary{cursor:pointer;padding:4px 0}
+details.rulesmini ul{margin:4px 0 0;padding-left:20px;line-height:1.5}
+.pausedBanner{display:none;text-align:center;font-weight:800;color:var(--accent);font-size:1.1rem}
+.isPaused .pausedBanner{display:block}
+.finished .controls,.finished #doneBtn{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section id="startScreen">
+    <div>
+      <h1 class="title">Gym Coach</h1>
+      <p class="subtitle">45-minute full-body workout for two. Spoken guidance and timers.</p>
+    </div>
+    <div class="rules">
+      <h2>The rules</h2>
+      <ul>
+        <li>Pick a weight where the last 2 reps feel hard but clean.</li>
+        <li>Start lighter than you think.</li>
+        <li>Sharp or joint pain means stop and use the swap.</li>
+        <li>Ask the attendant to set seat heights.</li>
+      </ul>
+    </div>
+    <button class="bigbtn" id="startBtn">Start workout</button>
+    <button class="bigbtn secondary" id="resumeBtn" hidden>Resume where you left off</button>
+    <p class="tips">Turn volume up and switch off silent mode (iPhone side switch) so beeps play. Keep this page open; the screen will stay on.</p>
+    <div class="plan">
+      <b>Warm-up 5 min:</b> 2 min easy bike or treadmill, 3 min mobility.<br>
+      <b>Main circuit, 3 sets each, side by side:</b> leg press, lat pulldown, bicep curl, triceps pushdown, leg curl or extension, plank, bicycle crunch, chest press. Rest 45s between sets.<br>
+      <b>Him:</b> 10-12 reps. <b>Her:</b> 12-15 reps.<br>
+      <b>Finisher 5 min:</b> her incline walk, him bike intervals.<br>
+      <b>Cool-down 3 min:</b> stretches.
+    </div>
+  </section>
+
+  <section id="workScreen">
+    <div class="topbar"><span id="stepCount">Step 1</span><span id="totalLeft">~45 min left</span></div>
+    <div class="progress"><div id="progBar"></div></div>
+    <div><span class="phase" id="phase">Warm-up</span></div>
+    <h2 class="exname" id="exName">-</h2>
+    <p class="setline" id="setLine"></p>
+    <div class="reps" id="reps"><div><small>Him</small><span id="himReps"></span></div><div><small>Her</small><span id="herReps"></span></div></div>
+    <div class="timerbox">
+      <div class="timer" id="timer">0:00</div>
+      <div class="timerlabel" id="timerLabel"></div>
+    </div>
+    <p class="pausedBanner">PAUSED</p>
+    <p class="sub" id="sub"></p>
+    <button id="doneBtn" hidden>Done with set</button>
+    <p class="cue" id="cue"></p>
+    <p class="swap" id="swap"></p>
+    <div><a class="demo" id="demo" target="_blank" rel="noopener" hidden>Watch demo (YouTube)</a></div>
+    <p class="next" id="next"></p>
+    <div class="controls">
+      <button id="backBtn">Back</button>
+      <button id="pauseBtn">Pause</button>
+      <button id="nextBtn">Next</button>
+    </div>
+    <details class="rulesmini"><summary>The rules</summary>
+      <ul>
+        <li>Last 2 reps hard but clean.</li>
+        <li>Start lighter than you think.</li>
+        <li>Sharp or joint pain: stop, use the swap.</li>
+        <li>Ask the attendant to set seat heights.</li>
+      </ul>
+    </details>
+  </section>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Workout data ---------- */
+var REST = 45;
+var EX = [
+  {name:"Leg press", him:"10-12 reps", her:"12-15 reps", cue:"Knees in line with toes. Don't lock out hard.", swap:"Dumbbell goblet squat", q:"leg press machine proper form"},
+  {name:"Lat pulldown", him:"10-12 reps", her:"12-15 reps", cue:"Pull elbows down and back, chest up.", swap:"Bent-over dumbbell row", q:"lat pulldown proper form"},
+  {name:"Dumbbell bicep curl", him:"10-12 reps", her:"12-15 reps", cue:"Elbows pinned to your sides, no swinging.", swap:"Cable curl", q:"dumbbell bicep curl proper form"},
+  {name:"Cable triceps pushdown", him:"10-12 reps", her:"12-15 reps", cue:"Only your forearms move.", swap:"Overhead dumbbell triceps extension", q:"cable triceps pushdown proper form"},
+  {name:"Leg curl or leg extension", him:"10-12 reps", her:"12-15 reps", cue:"Slow and controlled.", swap:"Dumbbell Romanian deadlift", q:"leg curl machine proper form"},
+  {name:"Plank", him:"45 sec hold", her:"35 sec hold", cue:"Squeeze glutes, hips level.", swap:"Dead bug", q:"plank proper form", timed:45},
+  {name:"Bicycle crunch", him:"16-20 reps", her:"20 reps", cue:"Twist from the ribs.", swap:"Cable woodchop", q:"bicycle crunch proper form"},
+  {name:"Chest press", him:"10-12 reps", her:"12-15 reps", cue:"Lower slowly, no bouncing.", swap:"Push-ups, on knees if needed", q:"chest press machine proper form", alt:"Chest press machine or dumbbell bench press"}
+];
+function sayReps(s){ return s.replace(/(\d+)-(\d+)/g,"$1 to $2").replace("sec","second"); }
+function yt(q){ return "https://www.youtube.com/results?search_query=" + encodeURIComponent(q + " tutorial"); }
+
+/* cue helper: t = seconds elapsed. r(n) = n seconds remaining. */
+function countdownCues(dur){ return [{t:dur-3,beep:"tick"},{t:dur-2,beep:"tick"},{t:dur-1,beep:"tick"}]; }
+
+var STEPS = [];
+
+STEPS.push({type:"timed", phase:"Warm-up", name:"Easy bike or treadmill walk", dur:120,
+  cue:"Easy pace. Just get warm and breathing a little harder.",
+  cues:[
+    {t:0, say:"Let's go! Warm up first. 2 minutes of easy bike, or a treadmill walk. Easy pace. Remember: pick a weight where the last 2 reps feel hard but clean, and start lighter than you think."},
+    {t:60, say:"1 minute left. Keep it easy."},
+    {t:110, say:"10 seconds left."}
+  ]});
+STEPS.push({type:"timed", phase:"Warm-up", name:"Mobility", dur:180, sub:"10 bodyweight squats",
+  cue:"10 squats, 10 arm circles each way, 10 leg swings each leg, shoulder rolls.",
+  cues:[
+    {t:0, say:"Mobility, 3 minutes. Start with 10 slow bodyweight squats.", sub:"10 bodyweight squats"},
+    {t:40, say:"Arm circles. 10 forward, then 10 backward.", sub:"Arm circles, 10 each way", beep:"tick"},
+    {t:85, say:"Leg swings. 10 each leg. Hold something for balance.", sub:"Leg swings, 10 each leg", beep:"tick"},
+    {t:140, say:"Shoulder rolls. Big and slow.", sub:"Shoulder rolls", beep:"tick"},
+    {t:170, say:"10 seconds left."}
+  ]});
+
+EX.forEach(function(ex, i){
+  for (var s=1; s<=3; s++){
+    var first = s===1;
+    var restSay = first
+      ? (i===0 ? "Nice warm-up. Rest " + REST + " seconds and head to the " + ex.name.toLowerCase() + ". Ask the attendant to set the seat if needed."
+               : "Great work. Rest " + REST + " seconds and move to the " + ex.name.toLowerCase() + ".")
+      : "Rest " + REST + " seconds.";
+    var nextSay = "Up next: " + ex.name + ", set " + s + " of 3. Him, " + sayReps(ex.him) + ". Her, " + sayReps(ex.her) + ".";
+    var restCues = [
+      {t:0, say:restSay},
+      {t:12, say:nextSay}
+    ];
+    if (!first) restCues.push({t:REST-17, say:"She can start her next set a little earlier if ready."});
+    restCues.push({t:REST-10, say:"10 seconds left."});
+    restCues.push({t:REST-6, say:"Get ready."});
+    restCues = restCues.concat(countdownCues(REST));
+    STEPS.push({type:"rest", phase:"Rest", name: first ? "Move to: " + ex.name : "Rest", dur:REST, ex:ex, exIndex:i, set:s, cues:restCues,
+      cue: first ? "Set up the next station. Swap if it's busy: " + ex.swap + "." : "Breathe. Shake it out. Sip water."});
+
+    var intro;
+    if (first) {
+      intro = "Exercise " + (i+1) + ": " + ex.name + ". Him, " + sayReps(ex.him) + ". Her, " + sayReps(ex.her) + ". " + ex.cue +
+              " If the machine is busy, do " + ex.swap.toLowerCase() + " instead. Go!";
+    } else {
+      intro = "Set " + s + ". Go! " + ex.cue;
+    }
+    if (ex.timed) {
+      var pc = [{t:0, say:intro, beep:"go"},
+                {t:20, say:"Keep breathing. Hips level."},
+                {t:35, say:"Her, drop now. Him, 10 more seconds.", beep:"tick", sub:"Her: drop. Him: hold!"},
+                {t:40, say:"5 more."}];
+      STEPS.push({type:"timed", phase:"Exercise " + (i+1) + " of 8", name:ex.name, dur:ex.timed, ex:ex, exIndex:i, set:s, cues:pc, cue:ex.cue, end:"Plank done."});
+    } else {
+      var wd = first ? 60 : 50;
+      var wc = [{t:0, say:intro, beep:"go"},
+                {t:wd-15, say:"Finish your reps, then tap done."}];
+      STEPS.push({type:"work", phase:"Exercise " + (i+1) + " of 8", name:ex.alt || ex.name, dur:wd, ex:ex, exIndex:i, set:s, cues:wc, cue:ex.cue});
+    }
+  }
+});
+
+/* Transition to finisher */
+STEPS.push({type:"rest", phase:"Rest", name:"Move to: Finisher", dur:REST,
+  cue:"Her: treadmill, incline 8 to 10 percent. Him: bike.",
+  cues:[{t:0, say:"Strength work done. Brilliant! Rest " + REST + " seconds. Finisher next. Her, get on a treadmill, incline 8 to 10 percent, brisk walk. Him, get on a bike. 20 seconds hard, 40 seconds easy, 5 rounds."},
+        {t:REST-10, say:"10 seconds left."},{t:REST-6, say:"Get ready. Him, first hard round coming."}].concat(countdownCues(REST))});
+
+(function(){
+  var c = [];
+  for (var r=0; r<5; r++){
+    var b = r*60;
+    c.push({t:b, say: r===0 ? "Finisher, 5 minutes. Her, brisk incline walk. Him, hard! Round 1." : "Hard! Round " + (r+1) + ".", beep:"go", sub:"Him: HARD - round " + (r+1) + " of 5"});
+    c.push({t:b+20, say:"Easy.", beep:"tick", sub:"Him: easy - round " + (r+1) + " of 5"});
+    if (r<4) { c.push({t:b+57,beep:"tick"},{t:b+58,beep:"tick"},{t:b+59,beep:"tick"}); }
+  }
+  c.push({t:150, say:"Halfway. Her, keep it brisk."});
+  c.push({t:290, say:"10 seconds left. Bring it home."});
+  c.sort(function(a,b){return a.t-b.t;});
+  STEPS.push({type:"timed", phase:"Finisher", name:"Finisher", dur:300, sub:"Him: HARD - round 1 of 5",
+    reps:{him:"Bike 20s hard / 40s easy x5", her:"Incline walk 8-10%, brisk"},
+    cue:"Her: incline treadmill 8-10%, brisk walk. Him: bike, 20 seconds hard, 40 easy.", cues:c, end:"Finisher done! Cool-down time."});
+})();
+
+var STRETCH = [
+  ["Quad stretch - left leg",25,"Quad stretch, left leg. Hold your ankle behind you, knees together. Hold a rail for balance."],
+  ["Quad stretch - right leg",25,"Switch. Right leg."],
+  ["Hamstring stretch - left leg",25,"Hamstring stretch, left leg. Heel forward, hinge at the hips, back flat."],
+  ["Hamstring stretch - right leg",25,"Switch. Right leg."],
+  ["Chest stretch",30,"Chest stretch. Forearm on a wall or post, turn your body gently away."],
+  ["Lower back stretch",30,"Lower back. Lie on your back, hug both knees to your chest, rock gently."]
+];
+STRETCH.forEach(function(st, k){
+  STEPS.push({type:"timed", phase:"Cool-down", name:st[0], dur:st[1], cue:st[2] + " Breathe slowly.",
+    cues:[{t:0, say:(k===0 ? "Cool-down, 3 minutes. " : "") + st[2], beep:"tick"}, {t:st[1]-5, say:"5 more seconds."}]});
+});
+STEPS.push({type:"end", phase:"Done", name:"Workout complete!", cue:"Great job, both of you. Drink some water.",
+  cues:[{t:0, say:"Workout complete. Great job, both of you! Drink some water.", beep:"done"}]});
+
+/* ---------- Audio ---------- */
+var actx = null;
+function initAudio(){
+  try {
+    if (!actx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); }
+    if (actx && actx.state === "suspended") actx.resume();
+  } catch(e) {}
+}
+function tone(freq, dur, when, vol){
+  if (!actx) return;
+  try {
+    var t0 = actx.currentTime + (when||0);
+    var o = actx.createOscillator(), g = actx.createGain();
+    o.type = "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol||0.5, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+  } catch(e) {}
+}
+function beep(kind){
+  if (kind === "tick") tone(880, 0.15);
+  else if (kind === "go") tone(1320, 0.5, 0, 0.6);
+  else if (kind === "end") { tone(660, 0.18); tone(660, 0.18, 0.25); }
+  else if (kind === "done") { tone(660,0.2); tone(880,0.2,0.22); tone(1320,0.4,0.44); }
+}
+
+var voice = null, utterRefs = [];
+function pickVoice(){
+  if (!("speechSynthesis" in window)) return;
+  var vs = speechSynthesis.getVoices() || [];
+  var pref = ["Samantha","Karen","Daniel","Moira","Google UK English Female","Google US English"];
+  for (var i=0;i<pref.length;i++){ for (var j=0;j<vs.length;j++){ if (vs[j].name.indexOf(pref[i])===0 && /^en/i.test(vs[j].lang)) { voice = vs[j]; return; } } }
+  for (var k=0;k<vs.length;k++){ if (/^en[-_]/i.test(vs[k].lang) && vs[k].localService) { voice = vs[k]; return; } }
+  for (var m=0;m<vs.length;m++){ if (/^en/i.test(vs[m].lang)) { voice = vs[m]; return; } }
+}
+if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text, interrupt){
+  if (!("speechSynthesis" in window) || !text) return;
+  try {
+    if (interrupt) speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    if (voice) u.voice = voice;
+    u.lang = voice ? voice.lang : "en-US";
+    u.rate = 0.95; u.pitch = 1; u.volume = 1;
+    utterRefs.push(u); if (utterRefs.length > 20) utterRefs.shift();
+    speechSynthesis.speak(u);
+    if (speechSynthesis.paused) speechSynthesis.resume();
+  } catch(e) {}
+}
+
+/* ---------- Wake lock ---------- */
+var wakeLock = null;
+function requestWake(){
+  try {
+    if ("wakeLock" in navigator && document.visibilityState === "visible") {
+      navigator.wakeLock.request("screen").then(function(l){ wakeLock = l; }).catch(function(){});
+    }
+  } catch(e) {}
+}
+document.addEventListener("visibilitychange", function(){
+  if (document.visibilityState === "visible" && started) { requestWake(); initAudio(); }
+});
+
+/* ---------- Engine ---------- */
+var $ = function(id){ return document.getElementById(id); };
+var idx = 0, started = false, paused = false;
+var stepStartMs = 0, pausedElapsed = 0, fired = {}, sub = "";
+var timerId = null;
+
+function elapsed(){ return paused ? pausedElapsed : (Date.now() - stepStartMs)/1000; }
+
+function save(){ try { localStorage.setItem("gymcoach_idx", String(idx)); } catch(e) {} }
+
+function goTo(i, opts){
+  idx = Math.max(0, Math.min(STEPS.length-1, i));
+  fired = {};
+  var st = STEPS[idx];
+  sub = st.sub || "";
+  pausedElapsed = 0;
+  stepStartMs = Date.now();
+  if (paused) { paused = false; updatePauseBtn(); }
+  if (!(opts && opts.quiet) && "speechSynthesis" in window) { try { speechSynthesis.cancel(); } catch(e) {} }
+  save();
+  render();
+  tick();
+}
+
+function fireCue(c){
+  if (c.beep) beep(c.beep);
+  if (c.sub) sub = c.sub;
+  if (c.say) speak(c.say, false);
+}
+
+function tick(){
+  if (!started) return;
+  var st = STEPS[idx];
+  var el = elapsed();
+  if (!paused) {
+    (st.cues||[]).forEach(function(c, k){
+      if (!fired[k] && el >= c.t) {
+        fired[k] = true;
+        if (el - c.t < 2.5) fireCue(c); else if (c.sub) sub = c.sub;
+      }
+    });
+    if (st.dur && el >= st.dur) { finishStep(); return; }
+  }
+  renderTimer();
+}
+
+function finishStep(){
+  var st = STEPS[idx];
+  if (st.type === "work" || (st.type === "timed" && st.ex)) beep("end");
+  if (st.end) speak(st.end, true);
+  if (idx < STEPS.length-1) goTo(idx+1, {quiet: !!st.end || st.type === "rest"});
+}
+
+function fmt(s){ s = Math.max(0, Math.ceil(s)); var m = Math.floor(s/60), r = s%60; return m + ":" + (r<10?"0":"") + r; }
+
+function remainingTotal(){
+  var t = 0;
+  for (var i=idx;i<STEPS.length;i++) t += STEPS[i].dur || 0;
+  t -= Math.min(elapsed(), STEPS[idx].dur || 0);
+  return t;
+}
+
+function upNext(){
+  for (var i=idx+1;i<STEPS.length;i++){
+    var s = STEPS[i];
+    if (s.type === "rest") continue;
+    if (s.ex) return "<b>" + esc(s.ex.name) + "</b>, set " + s.set + " of 3" + (s.type==="work"||s.ex.timed ? " - him " + esc(s.ex.him) + ", her " + esc(s.ex.her) : "");
+    return "<b>" + esc(s.name) + "</b>" + (s.dur ? " (" + fmt(s.dur) + ")" : "");
+  }
+  return "Nothing - you're done!";
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+
+function render(){
+  var st = STEPS[idx];
+  var ph = $("phase");
+  ph.textContent = st.type === "rest" ? "Rest" : st.phase;
+  ph.className = "phase " + (st.type === "work" ? "work" : st.type === "rest" ? "rest" : "timed");
+  $("exName").textContent = st.type === "rest" ? st.name : st.name;
+  var ex = st.ex;
+  if (ex) {
+    $("setLine").textContent = (st.type === "rest" ? "Next: set " : "Set ") + st.set + " of 3" + (st.type === "rest" ? " of " + ex.name : "");
+    $("himReps").textContent = ex.him; $("herReps").textContent = ex.her;
+    $("reps").style.display = "";
+    $("swap").innerHTML = "Machine busy or it hurts? Swap: <b>" + esc(ex.swap) + "</b>";
+    $("swap").style.display = "";
+    var d = $("demo"); d.href = yt(ex.q); d.hidden = false; d.textContent = "Watch demo: " + ex.name;
+  } else {
+    $("setLine").textContent = "";
+    if (st.reps) { $("himReps").textContent = st.reps.him; $("herReps").textContent = st.reps.her; $("reps").style.display = ""; }
+    else $("reps").style.display = "none";
+    $("swap").style.display = "none";
+    $("demo").hidden = true;
+  }
+  $("cue").textContent = st.cue || "";
+  $("doneBtn").hidden = st.type !== "work";
+  $("timerLabel").textContent = st.type === "work" ? "Tap Done when both finish (auto-advances)" :
+    st.type === "rest" ? "Rest" : st.type === "end" ? "" : "Time left";
+  $("next").innerHTML = st.type === "end" ? "" : "Up next: " + upNext();
+  $("stepCount").textContent = "Step " + (idx+1) + " of " + STEPS.length;
+  $("progBar").style.width = (idx/(STEPS.length-1)*100) + "%";
+  $("nextBtn").disabled = idx >= STEPS.length-1;
+  $("backBtn").disabled = idx <= 0;
+  document.body.classList.toggle("finished", st.type === "end");
+  renderTimer();
+}
+
+function renderTimer(){
+  var st = STEPS[idx];
+  var t = $("timer");
+  if (!st.dur) { t.textContent = "Done"; t.classList.remove("low"); $("sub").textContent = ""; $("totalLeft").textContent = "Finished"; return; }
+  var rem = st.dur - elapsed();
+  t.textContent = fmt(rem);
+  t.classList.toggle("low", rem <= 5.01 && st.type !== "work");
+  $("sub").textContent = sub;
+  $("totalLeft").textContent = "~" + Math.max(1, Math.round(remainingTotal()/60)) + " min left";
+}
+
+function updatePauseBtn(){
+  var b = $("pauseBtn");
+  b.textContent = paused ? "Resume" : "Pause";
+  b.classList.toggle("paused", paused);
+  document.body.classList.toggle("isPaused", paused);
+}
+
+function togglePause(){
+  initAudio();
+  if (!paused) {
+    pausedElapsed = elapsed(); paused = true;
+    try { speechSynthesis.cancel(); } catch(e) {}
+    speak("Paused.");
+  } else {
+    stepStartMs = Date.now() - pausedElapsed*1000; paused = false;
+    speak("Resuming.", true);
+  }
+  updatePauseBtn(); renderTimer();
+}
+
+function begin(fromIdx){
+  initAudio();
+  // speak synchronously inside the tap to unlock iOS speech
+  speak("Ready.", true);
+  tone(880, 0.12);
+  requestWake();
+  started = true;
+  $("startScreen").style.display = "none";
+  $("workScreen").style.display = "flex";
+  window.scrollTo(0,0);
+  goTo(fromIdx, {quiet:true});
+  if (!timerId) timerId = setInterval(tick, 250);
+}
+
+$("startBtn").addEventListener("click", function(){ begin(0); });
+$("resumeBtn").addEventListener("click", function(){
+  var i = 0; try { i = parseInt(localStorage.getItem("gymcoach_idx"),10) || 0; } catch(e) {}
+  begin(i);
+});
+$("pauseBtn").addEventListener("click", togglePause);
+$("nextBtn").addEventListener("click", function(){ initAudio(); if (idx < STEPS.length-1) goTo(idx+1); });
+$("backBtn").addEventListener("click", function(){ initAudio(); if (idx > 0) goTo(idx-1); });
+$("doneBtn").addEventListener("click", function(){ initAudio(); beep("end"); goTo(idx+1); });
+
+try {
+  var saved = parseInt(localStorage.getItem("gymcoach_idx"),10);
+  if (saved > 0 && saved < STEPS.length-1) $("resumeBtn").hidden = false;
+} catch(e) {}
+
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("sw.js").catch(function(){});
+}
+window.__GYM = {STEPS:STEPS, goTo:goTo};
+})();
+</script>
+</body>
+</html>
